@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AUTOJOD - Real-time Parking Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f8fafc;
+        }
+        .parking-slot {
+            transition: all 0.3s ease-in-out;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col relative">
+
+    <header class="bg-blue-900 text-white shadow-lg sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-md">
+                    <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-wide">AUTO<span class="text-blue-400">JOD</span></h1>
+                    <p class="text-xs text-blue-200">Smart Parking Solution</p>
+                </div>
+            </div>
+            
+            <div class="text-center md:text-right bg-blue-800/50 px-4 py-2 rounded-lg border border-blue-700/50">
+                <p class="text-sm text-blue-200 mb-0.5">สถานที่ปัจจุบัน</p>
+                <h2 class="text-md md:text-lg font-semibold text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    ตึกคณะครุศาสตร์อุตสาหกรรมและเทคโนโลยี
+                </h2>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-8">
+        
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <label for="floorSelect" class="font-medium text-slate-600 whitespace-nowrap">เลือกชั้นลานจอด:</label>
+                <select id="floorSelect" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none">
+                    <option value="1">ชั้นที่ 1 (โซน A, B)</option>
+                    <option value="2">ชั้นที่ 2 (โซน C, D)</option>
+                </select>
+            </div>
+            
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <span class="text-sm text-slate-500 flex items-center gap-2">
+                    <span class="relative flex h-3 w-3">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                    Live Data
+                </span>
+                <button id="refreshBtn" class="w-full md:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-md transition-colors flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    อัปเดตข้อมูล
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6 flex items-center gap-4 border-l-4 border-l-blue-500">
+                <div class="w-12 h-12 md:w-14 md:h-14 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs md:text-sm font-medium text-slate-500 mb-1">ทั้งหมด</p>
+                    <p class="text-2xl md:text-3xl font-bold text-slate-800" id="totalSpotsCount">0</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6 flex items-center gap-4 border-l-4 border-l-emerald-500">
+                <div class="w-12 h-12 md:w-14 md:h-14 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs md:text-sm font-medium text-slate-500 mb-1">ว่าง</p>
+                    <div class="flex items-baseline gap-1 md:gap-2">
+                        <p class="text-2xl md:text-3xl font-bold text-emerald-600" id="availableSpotsCount">0</p>
+                        <span class="text-xs md:text-sm text-emerald-600/70 font-medium">คัน</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6 flex items-center gap-4 border-l-4 border-l-amber-500">
+                <div class="w-12 h-12 md:w-14 md:h-14 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs md:text-sm font-medium text-slate-500 mb-1">จองแล้ว</p>
+                    <div class="flex items-baseline gap-1 md:gap-2">
+                        <p class="text-2xl md:text-3xl font-bold text-amber-600" id="bookedSpotsCount">0</p>
+                        <span class="text-xs md:text-sm text-amber-600/70 font-medium">คัน</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6 flex items-center gap-4 border-l-4 border-l-rose-500">
+                <div class="w-12 h-12 md:w-14 md:h-14 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs md:text-sm font-medium text-slate-500 mb-1">ไม่ว่าง</p>
+                    <div class="flex items-baseline gap-1 md:gap-2">
+                        <p class="text-2xl md:text-3xl font-bold text-rose-600" id="occupiedSpotsCount">0</p>
+                        <span class="text-xs md:text-sm text-rose-600/70 font-medium">คัน</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 border-b border-slate-100 pb-4 gap-4">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800" id="floorTitle">แผนผังลานจอดรถ ชั้นที่ 1</h3>
+                    <p class="text-sm text-slate-500 mt-1">คลิกที่ช่องสีเขียวเพื่อ <span class="text-emerald-600 font-semibold">จองที่จอดรถ</span></p>
+                </div>
+                
+                <div class="flex flex-wrap gap-4 text-sm font-medium">
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 rounded-md bg-emerald-500 shadow-inner"></div>
+                        <span class="text-slate-600">ว่าง (กดจองได้)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 rounded-md bg-amber-500 shadow-inner"></div>
+                        <span class="text-slate-600">จองแล้ว</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 rounded-md bg-rose-500 shadow-inner"></div>
+                        <span class="text-slate-600">ไม่ว่าง</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="parkingGridContainer" class="flex flex-col gap-10 overflow-x-auto pb-4">
+                <!-- Zones rendered via JS -->
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-6 text-center text-sm">
+        <p>&copy; 2026 AUTOJOD Smart Parking Solution - Mockup Project.</p>
+    </footer>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 transform scale-95 transition-transform duration-300" id="modalContent">
+            <div class="p-6">
+                <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-4 mx-auto">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold text-center text-slate-800 mb-2">ทำรายการจองที่จอดรถ</h3>
+                <p class="text-center text-slate-600 mb-4">ช่องจอด: <span id="modalSpotId" class="font-bold text-blue-600 text-lg"></span></p>
+                
+                <div class="mb-6">
+                    <label for="licensePlate" class="block text-sm font-medium text-slate-700 mb-2">ระบุป้ายทะเบียนรถของคุณ <span class="text-red-500">*</span></label>
+                    <input type="text" id="licensePlate" placeholder="เช่น กข 1234 กทม." class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                    <p id="licenseError" class="text-red-500 text-sm mt-1 hidden">กรุณาระบุป้ายทะเบียน</p>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button onclick="closeModal()" class="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors">
+                        ยกเลิก
+                    </button>
+                    <button onclick="confirmBooking()" class="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-md">
+                        ยืนยันการจอง
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Booking Modal -->
+    <div id="cancelModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 transform scale-95 transition-transform duration-300" id="cancelModalContent">
+            <div class="p-6">
+                <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mb-4 mx-auto">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold text-center text-slate-800 mb-2">ยกเลิกการจอง</h3>
+                <p class="text-center text-slate-600 mb-6">คุณต้องการยกเลิกการจองช่อง <span id="cancelSpotId" class="font-bold text-rose-600 text-lg"></span> ใช่หรือไม่?</p>
+                
+                <div class="flex gap-3">
+                    <button onclick="closeCancelModal()" class="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors">
+                        ปิด
+                    </button>
+                    <button onclick="confirmCancelBooking()" class="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-lg transition-colors shadow-md">
+                        ยืนยันการยกเลิก
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Store parking data and license plates
+        const parkingData = {
+            1: { zones: ['A', 'B'], spotsPerZone: 10, spots: {}, plates: {} },
+            2: { zones: ['C', 'D'], spotsPerZone: 10, spots: {}, plates: {} }
+        };
+
+        let currentFloor = 1;
+        let simulationInterval;
+        let selectedSpotToBook = null;
+        let selectedSpotToCancel = null;
+
+        function initData() {
+            for (const floor in parkingData) {
+                const zones = parkingData[floor].zones;
+                const total = parkingData[floor].spotsPerZone;
+                
+                zones.forEach(zone => {
+                    for (let i = 1; i <= total; i++) {
+                        const spotId = `${zone}${i}`;
+                        const isAvailable = Math.random() > 0.6;
+                        parkingData[floor].spots[spotId] = isAvailable ? 'available' : 'occupied'; 
+                        parkingData[floor].plates[spotId] = '';
+                    }
+                });
+            }
+        }
+
+        function renderGrid() {
+            const container = document.getElementById('parkingGridContainer');
+            container.innerHTML = ''; 
+            
+            const floorData = parkingData[currentFloor];
+            document.getElementById('floorTitle').textContent = `แผนผังลานจอดรถ ชั้นที่ ${currentFloor}`;
+
+            floorData.zones.forEach(zone => {
+                const zoneDiv = document.createElement('div');
+                zoneDiv.className = 'w-full min-w-[600px]'; 
+                
+                const zoneHeader = document.createElement('h4');
+                zoneHeader.className = 'text-lg font-bold text-slate-700 mb-4 flex items-center gap-2';
+                zoneHeader.innerHTML = `<span class="bg-slate-200 text-slate-800 px-3 py-1 rounded-md text-sm">โซน ${zone}</span>`;
+                zoneDiv.appendChild(zoneHeader);
+
+                const gridDiv = document.createElement('div');
+                gridDiv.className = 'grid grid-cols-5 gap-4 bg-slate-100 p-4 rounded-xl border border-slate-200';
+                
+                for (let i = 1; i <= floorData.spotsPerZone; i++) {
+                    const spotId = `${zone}${i}`;
+                    const status = floorData.spots[spotId];
+                    const plate = floorData.plates[spotId];
+                    
+                    const spotEl = document.createElement('div');
+                    spotEl.id = `spot-${spotId}`;
+                    applySpotStyles(spotEl, spotId, status, plate);
+                    
+                    gridDiv.appendChild(spotEl);
+                }
+                
+                zoneDiv.appendChild(gridDiv);
+                container.appendChild(zoneDiv);
+            });
+
+            updateSummary();
+        }
+
+        function applySpotStyles(spotEl, spotId, status, plate = '') {
+            let bgClass = '';
+            let innerContent = '';
+            let indicatorClass = '';
+            
+            if (status === 'available') {
+                // Style สำหรับช่องว่าง: เพิ่ม Hover สีเขียวทับเพื่อแสดงว่ากดจองได้
+                bgClass = 'bg-emerald-50 border-emerald-400 text-emerald-700 cursor-pointer hover:ring-4 ring-emerald-200 hover:-translate-y-1 group';
+                indicatorClass = 'bg-emerald-400';
+                spotEl.onclick = () => openModal(spotId); 
+                
+                innerContent = `
+                    <svg class="w-8 h-8 opacity-50 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <span class="font-bold text-lg z-10">${spotId}</span>
+                    <!-- Hover Overlay -->
+                    <div class="absolute inset-0 bg-emerald-500/90 hidden group-hover:flex flex-col items-center justify-center text-white font-medium transition-all rounded-lg z-20">
+                        <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                        <span>กดเพื่อจอง</span>
+                    </div>
+                `;
+            } else if (status === 'booked') {
+                // Style สำหรับช่องที่จองแล้ว: สามารถกดยกเลิกได้
+                bgClass = 'bg-amber-50 border-amber-400 text-amber-800 cursor-pointer hover:ring-4 ring-amber-200 group';
+                indicatorClass = 'bg-amber-400';
+                spotEl.onclick = () => openCancelModal(spotId);
+                
+                innerContent = `
+                    <div class="bg-amber-200 px-2 py-1 rounded text-xs font-bold mb-1 shadow-sm text-amber-800 truncate w-11/12 text-center border border-amber-300">${plate}</div>
+                    <span class="font-bold text-md z-10">${spotId}</span>
+                    <!-- Hover Overlay Cancel -->
+                    <div class="absolute inset-0 bg-rose-500/90 hidden group-hover:flex flex-col items-center justify-center text-white font-medium transition-all rounded-lg z-20">
+                        <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        <span class="text-sm">ยกเลิกจอง</span>
+                    </div>
+                `;
+            } else {
+                // Style สำหรับช่องไม่ว่าง (มีรถจอดจริง)
+                bgClass = 'bg-rose-50 border-rose-400 text-rose-700';
+                indicatorClass = 'bg-rose-400';
+                spotEl.onclick = null;
+                
+                innerContent = `
+                    <svg class="w-8 h-8 opacity-80 mb-1" fill="currentColor" viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
+                    <span class="font-bold text-lg z-10">${spotId}</span>
+                `;
+            }
+
+            spotEl.className = `parking-slot h-24 rounded-lg border-2 shadow-sm flex flex-col items-center justify-center relative overflow-hidden transition-all ${bgClass}`;
+            spotEl.innerHTML = innerContent + `<div class="absolute inset-x-0 bottom-0 h-1.5 ${indicatorClass}"></div>`;
+        }
+
+        function updateSummary() {
+            const floorData = parkingData[currentFloor];
+            let total = 0, available = 0, occupied = 0, booked = 0;
+
+            for (const spotId in floorData.spots) {
+                total++;
+                if (floorData.spots[spotId] === 'available') available++;
+                else if (floorData.spots[spotId] === 'booked') booked++;
+                else occupied++;
+            }
+
+            document.getElementById('totalSpotsCount').textContent = total;
+            document.getElementById('availableSpotsCount').textContent = available;
+            document.getElementById('bookedSpotsCount').textContent = booked;
+            document.getElementById('occupiedSpotsCount').textContent = occupied;
+        }
+
+        function simulateRealTime() {
+            if (simulationInterval) clearInterval(simulationInterval);
+            simulationInterval = setInterval(() => {
+                const floorData = parkingData[currentFloor];
+                const spotIds = Object.keys(floorData.spots);
+                const numChanges = Math.floor(Math.random() * 3) + 1;
+                
+                for(let i=0; i < numChanges; i++) {
+                    const randomSpotIdx = Math.floor(Math.random() * spotIds.length);
+                    const spotIdToChange = spotIds[randomSpotIdx];
+                    const currentStatus = floorData.spots[spotIdToChange];
+                    
+                    // ระบบ Random จะข้ามช่องที่จองแล้วไป
+                    if (currentStatus !== 'booked') {
+                        const newStatus = currentStatus === 'available' ? 'occupied' : 'available';
+                        floorData.spots[spotIdToChange] = newStatus;
+                        updateSingleSpotUI(spotIdToChange, newStatus);
+                    }
+                }
+                updateSummary();
+            }, 3000); 
+        }
+
+        function updateSingleSpotUI(spotId, status) {
+            const spotEl = document.getElementById(`spot-${spotId}`);
+            if (!spotEl) return;
+            const plate = parkingData[currentFloor].plates[spotId] || '';
+            applySpotStyles(spotEl, spotId, status, plate);
+        }
+
+        /* --- Booking Modal Logic --- */
+        const modal = document.getElementById('bookingModal');
+        const modalContent = document.getElementById('modalContent');
+        const licenseInput = document.getElementById('licensePlate');
+        const licenseError = document.getElementById('licenseError');
+
+        function openModal(spotId) {
+            selectedSpotToBook = spotId;
+            document.getElementById('modalSpotId').textContent = spotId;
+            licenseInput.value = '';
+            licenseError.classList.add('hidden');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 10);
+            
+            setTimeout(() => licenseInput.focus(), 100);
+        }
+
+        function closeModal() {
+            modal.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                selectedSpotToBook = null;
+            }, 300);
+        }
+
+        function confirmBooking() {
+            const plate = licenseInput.value.trim();
+            if (!plate) {
+                licenseError.classList.remove('hidden');
+                licenseInput.classList.add('border-red-500');
+                return;
+            }
+
+            if (selectedSpotToBook) {
+                parkingData[currentFloor].spots[selectedSpotToBook] = 'booked';
+                parkingData[currentFloor].plates[selectedSpotToBook] = plate;
+                updateSingleSpotUI(selectedSpotToBook, 'booked');
+                updateSummary();
+            }
+            closeModal();
+            setTimeout(() => alert(`ทำการจองช่องจอด ${selectedSpotToBook} สำหรับรถทะเบียน ${plate} สำเร็จ!`), 300);
+        }
+
+        /* --- Cancel Booking Modal Logic --- */
+        const cancelModal = document.getElementById('cancelModal');
+        const cancelModalContent = document.getElementById('cancelModalContent');
+
+        function openCancelModal(spotId) {
+            selectedSpotToCancel = spotId;
+            document.getElementById('cancelSpotId').textContent = spotId;
+            
+            cancelModal.classList.remove('hidden');
+            setTimeout(() => {
+                cancelModal.classList.remove('opacity-0');
+                cancelModalContent.classList.remove('scale-95');
+                cancelModalContent.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeCancelModal() {
+            cancelModal.classList.add('opacity-0');
+            cancelModalContent.classList.remove('scale-100');
+            cancelModalContent.classList.add('scale-95');
+            setTimeout(() => {
+                cancelModal.classList.add('hidden');
+                selectedSpotToCancel = null;
+            }, 300);
+        }
+
+        function confirmCancelBooking() {
+            if (selectedSpotToCancel) {
+                // คืนสถานะเป็น Available
+                parkingData[currentFloor].spots[selectedSpotToCancel] = 'available';
+                parkingData[currentFloor].plates[selectedSpotToCancel] = '';
+                updateSingleSpotUI(selectedSpotToCancel, 'available');
+                updateSummary();
+            }
+            closeCancelModal();
+        }
+
+        // Event Listeners
+        document.getElementById('floorSelect').addEventListener('change', (e) => {
+            currentFloor = parseInt(e.target.value);
+            renderGrid();
+            simulateRealTime(); 
+        });
+
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            const btn = document.getElementById('refreshBtn');
+            const svg = btn.querySelector('svg');
+            svg.classList.add('animate-spin');
+            
+            const floorData = parkingData[currentFloor];
+            for (const spotId in floorData.spots) {
+                if (floorData.spots[spotId] !== 'booked') {
+                    floorData.spots[spotId] = Math.random() > 0.5 ? 'available' : 'occupied';
+                }
+            }
+            renderGrid();
+            setTimeout(() => svg.classList.remove('animate-spin'), 500);
+        });
+
+        licenseInput.addEventListener('input', () => {
+            licenseError.classList.add('hidden');
+            licenseInput.classList.remove('border-red-500');
+        });
+
+        window.onload = () => {
+            initData();
+            renderGrid();
+            simulateRealTime();
+        };
+    </script>
+</body>
+</html>
